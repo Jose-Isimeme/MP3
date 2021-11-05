@@ -112,13 +112,13 @@ int main(int argc, char *argv[]){
 
 
     printf("server side is running");
-
     while(1){
 
         memset(&server, 0, sizeof server);
         memset(&client, 0, sizeof client);
 
         //recieve first RRQ from client
+        printf("looking to recieve first RRQ message");
         ssize_t socklen = sizeof(client);
         recieved = recvfrom(sockfd, mess_from_client, sizeof(mess_from_client), 0, (struct sockaddr *) &client, socklen);
         if(recieved < 0){
@@ -130,6 +130,7 @@ int main(int argc, char *argv[]){
                 exit(-1);
             }
         }
+        printf("recieved first RRQ message");
 
         //start by getting the opcode to determine what we are doing. Opcode is always 2 bytes
         memcpy(&first_mess_opcode, &mess_from_client, 2);
