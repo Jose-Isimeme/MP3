@@ -74,6 +74,8 @@ int main(int argc, char *argv[]){
     struct ack_mess ack_from_client;
     char data_mess_data[512];
     char help_char;
+    struct addrinfo server_addr;
+    struct addrinfo *server_addr_w_info, *adr_next;
 
     //check that both ip adress and port were used
     if(argc!=3){
@@ -85,19 +87,29 @@ int main(int argc, char *argv[]){
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = well_known_port;
-    
+    getaddrinfo(NULL, argv[2], &server_addr, &server_addr_w_info);
 
+    for(adr_next = server_addr_w_info; adr_next!=NULL; adr_next->ai_next){
     //socket
-    if(sockfd = socket(AF_INET, SOCK_DGRAM, 0)==-1){
-        perror("socket error");
-        exit(-1);
+        if(sockfd = socket(AF_INET, SOCK_DGRAM, adr_next->ai_protocol)==-1){
+            //perror("socket error");
+           // exit(-1);
+           continue;
+        }
+
+        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, 1, sizeof(int));
+        //bind to server
+        if(bind(sockfd, adr_next->ai_addr, adr_next->ai_addrlen)==-1){
+            //perror("binding error");
+            //exit(-1);
+            close(sockfd);
+            continue;
+        }
+
+        //otherwise we found the righ one so exit out
+        break;
     }
 
-    //bind to server
-    if(bind(sockfd, (struct sockaddr *) &server, sizeof(server))==-1){
-        perror("binding error");
-        exit(-1);
-    }
 
     printf("server side is running");
 
