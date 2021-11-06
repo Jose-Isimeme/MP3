@@ -4,7 +4,7 @@ Participation Breakdown
 
 Emily: Worked on server code, created Makefile, wrote README, created test document
 
-Jose:
+Jose: Worked on server code.
 
 ## How to Run the Program
 - use the make file to build the server with "make server"
