@@ -12,10 +12,10 @@
 #define OCTET_MODE 0
 
 /* Structs created based on diagrams of message formats in recitation */
-struct request_mess{
+/*struct request_mess{
     int opcode: 1;
     int filename;
-};
+};*/
 
 struct data_mess{
     int opcode;
@@ -28,20 +28,20 @@ struct ack_mess{
     int block_num;
 };
 
-struct error_mess{
+/*struct error_mess{
     int opcode: 5;
     int error_num;
     int error_data;
 };
+*/
 
-
-struct tftp{
+/*struct tftp{
     int opcode;
     struct request_mess request_mess;
     struct data_mess data_mess;
     struct ack_mess ack_mess;
     struct error_mess error_mess;
-};
+};*/
 
 int main(int argc, char *argv[]){
 
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]){
     int well_known_port = 0;
     char *char1;
     ssize_t recieved, sent;
-    struct tftp tftp_message;
+    //struct tftp tftp_message;
     //struct tftp data_message_struct; 
     //struct tftp tftp_from_client;
     //struct tftp tftp_ack_message;
@@ -280,13 +280,7 @@ int main(int argc, char *argv[]){
                             memcpy(data_message_struct.data_mess.data, data_mess, datal);
 
                             sent = sendto(sockfd, &data_message_struct, datal+4, 0, (struct sockaddr *) &client, sizeof(server));
-                            if(sent==-1){
-                                perror("error sending");
-                            }
-                            if(sent < 0){
-                                printf("session done");
-                                exit(-1);
-                            }
+                           
 
                             int recieve_from_client;
                             recieve_from_client = recvfrom(sockfd, &tftp_from_client, sizeof(tftp_from_client), 0, (struct sockaddr *) &client, sizeof(server));
