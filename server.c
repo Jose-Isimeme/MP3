@@ -34,6 +34,7 @@ struct error_mess{
     int error_data;
 };
 
+
 struct tftp{
     int opcode;
     struct request_mess request_mess;
@@ -45,7 +46,7 @@ struct tftp{
 int main(int argc, char *argv[]){
 
     char data[512];
-    int sockfd, new_sockfd;
+    int sockfd, sock_fd_2;
     struct sockaddr_in client, server, new_server;
     int well_known_port = 0;
     char *char1;
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]){
     char data_mess[512];
     FILE *file, *fixed_file;
     int datal;
-    int ephemeral_port = 0;
+    int ephem_pt = 0;
     char mess_from_client[1024]={0};
     char mode_var[512];
     char nullchar = '\0';
@@ -76,6 +77,7 @@ int main(int argc, char *argv[]){
     char help_char;
     struct addrinfo server_addr;
     struct addrinfo *server_addr_w_info, *adr_next;
+    struct addrinfo *client_addr_w_info, *adr_next_2;
 
     //check that both ip adress and port were used
     if(argc!=3){
@@ -174,21 +176,39 @@ int main(int argc, char *argv[]){
                     close(sockfd);
 
                     //here is where we create a new ephemeral port to use and start new socket
-                    new_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-                    if(new_sockfd==-1){
+                    /*sock_fd_2 = socket(AF_INET, SOCK_DGRAM, 0);
+                    if(sock_fd_2==-1){
                         perror("socket error");
                         exit(-1);
-                    }
+                    }*/
                     
-                    new_server.sin_port = htons(ephemeral_port);
+                    new_server.sin_port = htons(ephem_pt);
                     new_server.sin_family = AF_INET;
                     new_server.sin_addr.s_addr = htonl(INADDR_ANY);
+                    getaddrinfo(NULL, ephem_pt, &server_addr, &client_addr_w_info);
 
+                    for(adr_next_2 = client_addr_w_info; adr_next_2!=NULL; adr_next_2->ai_next){
+                    //socket
+                        if(sock_fd_2 = socket(AF_INET, SOCK_DGRAM, adr_next_2->ai_protocol)==-1){
+                            //perror("socket error");
+                        // exit(-1);
+                        continue;
+                        }
+
+                        setsockopt(sock_fd_2, SOL_SOCKET, SO_REUSEADDR, 1, sizeof(int));
+                        //bind to server
+                        if(bind(sock_fd_2, adr_next_2->ai_addr, adr_next_2->ai_addrlen)==-1){
+                            //perror("binding error");
+                            //exit(-1);
+                            close(sockfd);
+                            continue;
+                        }
+                    }
                     //new bind
-                    if(bind(new_sockfd, (struct sockaddr *) &new_server, sizeof (new_server))<0){
+                    /*if(bind(sock_fd_2, (struct sockaddr *) &new_server, sizeof (new_server))<0){
                         perror("binding error");
                         exit(-1);
-                    }
+                    }*/
 
                     FD_ZERO(&rset);
                     FD_SET(fd, &rset);
@@ -232,15 +252,16 @@ int main(int argc, char *argv[]){
                         int select_val;
                         int total_size;
                         while(i<10){
-                            sent = sendto(new_sockfd, (void *) &mess_to_client, sizeof(mess_to_client.opcode)+sizeof(mess_to_client.data)+i, 0, (struct sockaddr *) &client, sizeof(server));
+
+                            sent = sendto(sock_fd_2, (void *) &mess_to_client, sizeof(mess_to_client.opcode)+sizeof(mess_to_client.data)+i, 0, (struct sockaddr *) &client, sizeof(server));
                             if(sent==-1){
                                 perror("error sending");
                             }
-                            select_val = select(new_sockfd+1, &rset, NULL, NULL, &timeval);
+                            select_val = select(sock_fd_2+1, &rset, NULL, NULL, &timeval);
                             if(select_val>0){
                                 //need to recieve here
                                 int recieve_from_client;
-                                recieve_from_client = recvfrom(new_sockfd, (void *) &ack_from_client, sizeof(ack_from_client), 0, (struct sockaddr *) &client, sizeof(server));
+                                recieve_from_client = recvfrom(sock_fd_2, (void *) &ack_from_client, sizeof(ack_from_client), 0, (struct sockaddr *) &client, sizeof(server));
                                 if(recieve_from_client>=0){
                                     if(ntohs(ack_from_client.opcode)==4){
                                         if(ntohs(ack_from_client.block_num==num)){
